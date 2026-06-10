@@ -1,0 +1,1298 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 能力引擎 — 为集成商注入 AI 竞争力</title>
+
+    <!-- Font: Google Fonts fallback for CJK -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+
+    <style>
+        /* ===========================================
+           CSS CUSTOM PROPERTIES — Mat 设计系统适配
+           暗色森林绿 + 木棕暖光 + 奶油文字 + 暖橙单点强调
+           =========================================== */
+        :root {
+            /* === Mat 色板 === */
+            --bg-dark: #232E26;
+            --bg-dark-alt: #2E3D30;
+            --bg-cream: #EDE6D0;
+            --bg-cream-alt: #E4DAC4;
+            --ink-cream: #F0E8D2;
+            --ink-cream-2: rgba(240, 232, 210, 0.58);
+            --ink-cream-3: rgba(240, 232, 210, 0.3);
+            --ink-dark: #1E2820;
+            --ink-dark-2: rgba(30, 40, 32, 0.6);
+            --ink-dark-3: rgba(30, 40, 32, 0.3);
+            --accent: #C07030;
+            --border-on-dark: rgba(240, 232, 210, 0.12);
+            --border-on-cream: rgba(30, 40, 32, 0.14);
+            --wood-glow: #7A4E24;
+
+            /* === 微软雅黑字体栈（用户指定） === */
+            --font-display: 'Microsoft YaHei', '微软雅黑', 'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC', sans-serif;
+            --font-body: 'Microsoft YaHei', '微软雅黑', 'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC', sans-serif;
+            --font-label: 'Microsoft YaHei', '微软雅黑', 'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC', sans-serif;
+
+            /* === 字号 — 演讲型大字号（1920×1080 舞台基准） === */
+            --size-display: 190px;
+            --size-h1: 130px;
+            --size-h2: 96px;
+            --size-h3: 48px;
+            --size-lead: 36px;
+            --size-body: 30px;
+            --size-caption: 22px;
+            --size-label: 17px;
+            --size-stat: 120px;
+
+            /* === 间距 === */
+            --pad-x: 120px;
+            --pad-y: 80px;
+            --gap-xl: 64px;
+            --gap-lg: 48px;
+            --gap-md: 32px;
+            --gap-sm: 16px;
+
+            /* === 动画 === */
+            --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+            --dur-normal: 0.7s;
+
+            /* === 舞台背景 === */
+            --stage-bg: #0a0d0b;
+            --slide-bg: var(--bg-dark);
+        }
+
+        /* ===========================================
+           FIXED 16:9 STAGE — viewport-base.css 全文
+           =========================================== */
+
+        /* 1. 锁定浏览器视口 */
+        html, body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            overflow: hidden;
+            background: var(--stage-bg, #000);
+        }
+
+        /* 2. 全窗口舞台视口 */
+        .deck-viewport {
+            position: fixed;
+            inset: 0;
+            overflow: hidden;
+            background: var(--stage-bg, #000);
+        }
+
+        /* 3. 固定 16:9 设计画布，JS 设置 transform */
+        .deck-stage {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 1920px;
+            height: 1080px;
+            overflow: hidden;
+            transform-origin: 0 0;
+            background: var(--slide-bg, #fff);
+        }
+
+        /* 4. 幻灯片在固定舞台内堆叠 */
+        .slide {
+            position: absolute;
+            inset: 0;
+            width: 1920px;
+            height: 1080px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            visibility: hidden;
+            opacity: 0;
+            pointer-events: none;
+            background: var(--bg-dark);
+        }
+        .slide.active, .slide.visible {
+            visibility: visible;
+            opacity: 1;
+            pointer-events: auto;
+            z-index: 1;
+        }
+
+        /* 5. 媒体在幻灯片边界内 */
+        img, video, canvas, svg {
+            max-width: 100%;
+            max-height: 100%;
+        }
+
+        /* 6. 演示控件在舞台外 */
+        .deck-controls {
+            position: fixed;
+            left: 50%;
+            bottom: 22px;
+            transform: translateX(-50%);
+            z-index: 1000;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .deck-controls .nav-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: rgba(240, 232, 210, 0.25);
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .deck-controls .nav-dot.active {
+            background: rgba(240, 232, 210, 0.85);
+        }
+        .slide-counter {
+            position: fixed;
+            right: 28px;
+            bottom: 24px;
+            z-index: 1000;
+            font-family: var(--font-label);
+            font-size: 14px;
+            font-weight: 300;
+            color: rgba(240, 232, 210, 0.3);
+            letter-spacing: 0.08em;
+        }
+
+        /* 7. 打印 */
+        @media print {
+            html, body { width: 1920px; height: auto; overflow: visible; background: #fff; }
+            .deck-viewport { position: static; overflow: visible; background: #fff; }
+            .deck-stage { position: static; width: auto; height: auto; transform: none !important; background: none; }
+            .slide { position: relative; display: flex !important; visibility: visible !important; opacity: 1 !important; pointer-events: auto !important; width: 1920px; height: 1080px; break-after: page; page-break-after: always; }
+            .slide:last-child { break-after: auto; page-break-after: auto; }
+            .deck-controls, .slide-counter { display: none !important; }
+        }
+
+        /* 8. 减少动画 */
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                transition-duration: 0.2s !important;
+            }
+        }
+
+        /* ===========================================
+           BASE RESET & GLOBAL
+           =========================================== */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: var(--font-body);
+            font-weight: 400;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* ===========================================
+           ATMOSPHERIC GLOW — Mat 标志性木棕暖光
+           每张暗色幻灯片右下角的径向渐变
+           =========================================== */
+        .slide.dark::before {
+            content: '';
+            position: absolute;
+            right: 0;
+            bottom: 0;
+            width: 55%;
+            height: 70%;
+            background: radial-gradient(
+                ellipse at 70% 80%,
+                rgba(122, 78, 36, 0.28) 0%,
+                rgba(80, 50, 20, 0.14) 40%,
+                transparent 70%
+            );
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* 奶油色幻灯片不发光 */
+        .slide.cream::before { display: none; }
+
+        /* ===========================================
+           CHROME FRAME — 顶部/底部装饰条
+           =========================================== */
+        .chrome-band {
+            position: relative;
+            z-index: 1;
+            flex-shrink: 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px var(--pad-x) 14px;
+            border-bottom: 1px solid var(--border-on-dark);
+        }
+        .chrome-band .chrome-label {
+            font-family: var(--font-label);
+            font-size: var(--size-label);
+            font-weight: 300;
+            color: var(--accent);
+            letter-spacing: 0.08em;
+        }
+        .chrome-band .chrome-num {
+            font-family: var(--font-label);
+            font-size: var(--size-label);
+            font-weight: 300;
+            color: var(--ink-cream-3);
+            letter-spacing: 0.08em;
+        }
+
+        .foot-band {
+            position: relative;
+            z-index: 1;
+            flex-shrink: 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px var(--pad-x) 20px;
+            border-top: 1px solid var(--border-on-dark);
+        }
+        .foot-band span {
+            font-family: var(--font-label);
+            font-size: 13px;
+            font-weight: 300;
+            color: var(--ink-cream-3);
+            letter-spacing: 0.06em;
+        }
+
+        /* 奶油色幻灯片上的 chrome */
+        .slide.cream .chrome-band { border-color: var(--border-on-cream); }
+        .slide.cream .chrome-band .chrome-label { color: var(--accent); }
+        .slide.cream .chrome-band .chrome-num { color: var(--ink-dark-3); }
+        .slide.cream .foot-band { border-color: var(--border-on-cream); }
+        .slide.cream .foot-band span { color: var(--ink-dark-3); }
+
+        /* ===========================================
+           SLIDE CONTENT — 主体内容区
+           =========================================== */
+        .slide-content {
+            position: relative;
+            z-index: 1;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 0 var(--pad-x);
+            min-height: 0;
+        }
+
+        /* 封面/结束页：无 chrome 时居中 */
+        .slide.chromeless .slide-content {
+            padding-top: var(--pad-y);
+            padding-bottom: var(--pad-y);
+        }
+
+        /* ===========================================
+           TYPOGRAPHY — 微软雅黑字重层级
+           =========================================== */
+        .kicker {
+            font-family: var(--font-label);
+            font-size: var(--size-label);
+            font-weight: 400;
+            color: var(--accent);
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            margin-bottom: var(--gap-sm);
+        }
+
+        .display {
+            font-family: var(--font-display);
+            font-size: var(--size-display);
+            font-weight: 700;
+            line-height: 1.05;
+            color: var(--ink-cream);
+            letter-spacing: -0.02em;
+        }
+
+        h1 {
+            font-family: var(--font-display);
+            font-size: var(--size-h1);
+            font-weight: 700;
+            line-height: 1.08;
+            color: var(--ink-cream);
+            letter-spacing: -0.015em;
+        }
+
+        h2 {
+            font-family: var(--font-display);
+            font-size: var(--size-h2);
+            font-weight: 700;
+            line-height: 1.1;
+            color: var(--ink-cream);
+            letter-spacing: -0.01em;
+            margin-bottom: var(--gap-md);
+        }
+
+        h3 {
+            font-family: var(--font-display);
+            font-size: var(--size-h3);
+            font-weight: 700;
+            line-height: 1.2;
+            color: var(--ink-cream);
+            margin-bottom: var(--gap-sm);
+        }
+
+        .lead {
+            font-family: var(--font-body);
+            font-size: var(--size-lead);
+            font-weight: 400;
+            line-height: 1.55;
+            color: var(--ink-cream-2);
+            max-width: 1100px;
+        }
+
+        .body-text {
+            font-family: var(--font-body);
+            font-size: var(--size-body);
+            font-weight: 400;
+            line-height: 1.65;
+            color: var(--ink-cream-2);
+            max-width: 1100px;
+        }
+
+        .caption {
+            font-family: var(--font-body);
+            font-size: var(--size-caption);
+            font-weight: 300;
+            line-height: 1.5;
+            color: var(--ink-cream-3);
+        }
+
+        .stat-value {
+            font-family: var(--font-display);
+            font-size: var(--size-stat);
+            font-weight: 700;
+            line-height: 1.0;
+            color: var(--ink-cream);
+            letter-spacing: -0.02em;
+        }
+        .stat-value em {
+            font-style: normal;
+            color: var(--accent);
+        }
+
+        /* 奶油色幻灯片文字 */
+        .slide.cream h1, .slide.cream h2, .slide.cream h3,
+        .slide.cream .display, .slide.cream .stat-value {
+            color: var(--ink-dark);
+        }
+        .slide.cream .lead, .slide.cream .body-text {
+            color: var(--ink-dark-2);
+        }
+        .slide.cream .caption { color: var(--ink-dark-3); }
+
+        /* ===========================================
+           COMPONENTS: BULLET LIST — Mat 标志性破折号标记
+           =========================================== */
+        .bullet-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            gap: var(--gap-sm);
+        }
+        .bullet-list li {
+            display: grid;
+            grid-template-columns: 1.2em 1fr;
+            gap: 0.5em;
+            font-family: var(--font-body);
+            font-size: var(--size-body);
+            font-weight: 400;
+            line-height: 1.55;
+            color: var(--ink-cream-2);
+        }
+        .bullet-list li::before {
+            content: '—';
+            color: var(--accent);
+            font-weight: 400;
+        }
+        .bullet-list-lg li {
+            font-size: var(--size-lead);
+        }
+
+        /* 奶油色幻灯片上的列表 */
+        .slide.cream .bullet-list li { color: var(--ink-dark-2); }
+
+        /* ===========================================
+           COMPONENTS: INFO-CARD — Mat 标志性奶油纸卡片
+           =========================================== */
+        .info-card {
+            background: var(--bg-cream);
+            color: var(--ink-dark);
+            padding: 40px 56px;
+            max-width: 520px;
+            flex-shrink: 0;
+        }
+        .info-card h3 {
+            color: var(--ink-dark);
+            margin-bottom: 12px;
+        }
+        .info-card p {
+            font-family: var(--font-body);
+            font-size: var(--size-body);
+            font-weight: 400;
+            line-height: 1.6;
+            color: var(--ink-dark-2);
+        }
+        .info-card .card-label {
+            font-family: var(--font-label);
+            font-size: var(--size-label);
+            font-weight: 400;
+            color: var(--accent);
+            letter-spacing: 0.08em;
+            margin-bottom: 10px;
+        }
+
+        /* ===========================================
+           COMPONENTS: CAPABILITY GRID
+           =========================================== */
+        .capability-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: var(--gap-md);
+        }
+        .capability-grid.cols-3 {
+            grid-template-columns: repeat(3, 1fr);
+        }
+        .capability-item {
+            border-left: 2px solid var(--accent);
+            padding-left: 24px;
+        }
+        .capability-item .cap-icon {
+            font-size: 28px;
+            margin-bottom: 6px;
+        }
+        .capability-item h4 {
+            font-family: var(--font-display);
+            font-size: var(--size-h3);
+            font-weight: 700;
+            line-height: 1.3;
+            color: var(--ink-cream);
+            margin-bottom: 6px;
+        }
+        .capability-item p {
+            font-family: var(--font-body);
+            font-size: var(--size-caption);
+            font-weight: 400;
+            line-height: 1.5;
+            color: var(--ink-cream-2);
+        }
+
+        /* ===========================================
+           COMPONENTS: FLOW ARROW
+           =========================================== */
+        .flow-row {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .flow-node {
+            font-family: var(--font-display);
+            font-size: var(--size-h3);
+            font-weight: 700;
+            color: var(--ink-cream);
+            padding: 18px 32px;
+            border: 1px solid var(--border-on-dark);
+            white-space: nowrap;
+        }
+        .flow-arrow {
+            font-size: 28px;
+            color: var(--accent);
+            font-weight: 700;
+        }
+        .flow-node.accent {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        /* ===========================================
+           COMPONENTS: VALUE COLUMNS (三列价值)
+           =========================================== */
+        .value-columns {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: var(--gap-lg);
+        }
+        .value-col {
+            border-top: 3px solid var(--accent);
+            padding-top: var(--gap-md);
+        }
+        .value-col h3 { margin-bottom: var(--gap-sm); }
+        .value-col ul {
+            list-style: none;
+            padding: 0;
+        }
+        .value-col ul li {
+            font-family: var(--font-body);
+            font-size: var(--size-body);
+            font-weight: 400;
+            line-height: 1.6;
+            color: var(--ink-cream-2);
+            margin-bottom: 8px;
+        }
+        .value-col ul li::before {
+            content: '+ ';
+            color: var(--accent);
+            font-weight: 700;
+        }
+
+        .slide.cream .value-col h3 { color: var(--ink-dark); }
+        .slide.cream .value-col ul li { color: var(--ink-dark-2); }
+
+        /* ===========================================
+           COMPONENTS: STAT CELL (数字高亮)
+           =========================================== */
+        .stat-row {
+            display: flex;
+            gap: 0;
+            margin-top: var(--gap-lg);
+        }
+        .stat-cell {
+            flex: 1;
+            padding: var(--gap-md) var(--pad-x) var(--gap-md) 0;
+            border-right: 1px solid var(--border-on-dark);
+        }
+        .stat-cell:last-child { border-right: none; }
+        .stat-cell .stat-label {
+            font-family: var(--font-body);
+            font-size: var(--size-caption);
+            font-weight: 400;
+            color: var(--ink-cream-3);
+            margin-top: 8px;
+        }
+
+        /* ===========================================
+           SLIDE VARIANTS
+           =========================================== */
+        .slide.cream {
+            background: var(--bg-cream);
+        }
+
+        /* 隐藏 chrome 的幻灯片类型（封面、结束页） */
+        .slide.chromeless .chrome-band,
+        .slide.chromeless .foot-band { display: none; }
+
+        /* ===========================================
+           ANIMATIONS — 淡入+上移，子元素交错
+           =========================================== */
+        .reveal {
+            opacity: 0;
+            transform: translateY(36px);
+            transition:
+                opacity var(--dur-normal) var(--ease-out-expo),
+                transform var(--dur-normal) var(--ease-out-expo);
+        }
+        .slide.visible .reveal {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .reveal:nth-child(1) { transition-delay: 0.05s; }
+        .reveal:nth-child(2) { transition-delay: 0.15s; }
+        .reveal:nth-child(3) { transition-delay: 0.25s; }
+        .reveal:nth-child(4) { transition-delay: 0.35s; }
+        .reveal:nth-child(5) { transition-delay: 0.45s; }
+        .reveal:nth-child(6) { transition-delay: 0.55s; }
+        .reveal:nth-child(7) { transition-delay: 0.65s; }
+        .reveal:nth-child(8) { transition-delay: 0.72s; }
+
+        /* ===========================================
+           INLINE EDITING
+           =========================================== */
+        .edit-hotzone {
+            position: fixed; top: 0; left: 0;
+            width: 80px; height: 80px;
+            z-index: 10000;
+            cursor: pointer;
+        }
+        .edit-toggle {
+            position: fixed;
+            top: 16px; left: 16px;
+            z-index: 10001;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            background: rgba(30, 40, 32, 0.85);
+            border: 1px solid rgba(240, 232, 210, 0.2);
+            color: var(--ink-cream);
+            font-family: var(--font-label);
+            font-size: 14px;
+            padding: 8px 16px;
+            cursor: pointer;
+            border-radius: 0;
+        }
+        .edit-toggle.show, .edit-toggle.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        [contenteditable="true"] {
+            outline: 1px dashed rgba(192, 112, 48, 0.5);
+            outline-offset: 4px;
+            cursor: text;
+        }
+    </style>
+</head>
+<body>
+    <div class="edit-hotzone"></div>
+    <button class="edit-toggle" id="editToggle" title="编辑模式 (E)">✏️ 编辑</button>
+
+    <!-- ============================================
+    DECK VIEWPORT
+    ============================================ -->
+    <div class="deck-viewport">
+        <main class="deck-stage" id="deckStage">
+
+            <!-- ========================================
+            SLIDE 01 — 封面 (chromeless)
+            ======================================== -->
+            <section class="slide dark chromeless active">
+                <div class="slide-content">
+                    <p class="kicker reveal">AI 能力引擎</p>
+                    <h1 class="display reveal" style="font-size: 180px; margin-bottom: var(--gap-lg);">
+                        为集成商注入<br>AI 竞争力
+                    </h1>
+                    <p class="lead reveal" style="max-width: 900px;">
+                        一站式 AI 解决方案输出<br>
+                        助力您的客户拥抱智能化转型
+                    </p>
+                </div>
+            </section>
+
+            <!-- ========================================
+            SLIDE 02 — 市场机遇
+            ======================================== -->
+            <section class="slide dark">
+                <div class="chrome-band">
+                    <span class="chrome-label">市场洞察</span>
+                    <span class="chrome-num">01</span>
+                </div>
+                <div class="slide-content">
+                    <h2 class="reveal">您的客户正在问 AI</h2>
+                    <p class="lead reveal" style="margin-bottom: var(--gap-lg);">
+                        中小企业 AI 需求爆发式增长，但大多数系统集成商缺乏 AI 交付能力。<br>
+                        这不是您的短板——<em style="color: var(--accent); font-style: normal;">这是我们的专长</em>。
+                    </p>
+                    <ul class="bullet-list bullet-list-lg reveal">
+                        <li>客户要求智能化，但您缺 AI 团队</li>
+                        <li>自建 AI 能力成本高、周期长、风险大</li>
+                        <li>您需要的是一个可靠的 AI 技术伙伴</li>
+                    </ul>
+                </div>
+                <div class="foot-band">
+                    <span>AI 解决方案业务蓝图</span>
+                    <span>02 / 12</span>
+                </div>
+            </section>
+
+            <!-- ========================================
+            SLIDE 03 — 合作定位
+            ======================================== -->
+            <section class="slide dark">
+                <div class="chrome-band">
+                    <span class="chrome-label">合作模式</span>
+                    <span class="chrome-num">02</span>
+                </div>
+                <div class="slide-content">
+                    <h2 class="reveal">您做集成，我们做 AI</h2>
+                    <div class="reveal" style="display: flex; gap: 48px; align-items: stretch;">
+                        <div class="info-card" style="flex: 1; max-width: none;">
+                            <p class="card-label">您的角色</p>
+                            <h3>系统集成商</h3>
+                            <p>客户关系 · 行业 Know-how<br>系统集成 · 持续服务<br>商务谈判 · 项目交付</p>
+                        </div>
+                        <div style="display: flex; align-items: center; color: var(--accent); font-size: 48px; font-weight: 700;">→</div>
+                        <div class="info-card" style="flex: 1; max-width: none;">
+                            <p class="card-label">我们的角色</p>
+                            <h3>AI 能力引擎</h3>
+                            <p>AI 咨询 · AI 培训<br>AI 开发 · AI 系统集成<br>AI 内容制作 · AI 运维赋能</p>
+                        </div>
+                    </div>
+                    <p class="lead reveal" style="margin-top: var(--gap-lg); text-align: center;">
+                        您卖服务，<em style="color: var(--accent); font-style: normal;">我们交付 AI 能力</em>
+                    </p>
+                </div>
+                <div class="foot-band">
+                    <span>AI 解决方案业务蓝图</span>
+                    <span>03 / 12</span>
+                </div>
+            </section>
+
+            <!-- ========================================
+            SLIDE 04 — 业务全景
+            ======================================== -->
+            <section class="slide dark">
+                <div class="chrome-band">
+                    <span class="chrome-label">能力全景</span>
+                    <span class="chrome-num">03</span>
+                </div>
+                <div class="slide-content">
+                    <h2 class="reveal">五大业务线 + 一个战略入口</h2>
+                    <p class="lead reveal" style="margin-bottom: var(--gap-xl);">
+                        从培训获客到深度交付，全栈 AI 服务覆盖客户 AI 化全旅程
+                    </p>
+                    <div class="capability-grid cols-3 reveal">
+                        <div class="capability-item">
+                            <h4>🎓 AI 培训</h4>
+                            <p>低门槛获客入口<br>培训中自然发现痛点</p>
+                        </div>
+                        <div class="capability-item">
+                            <h4>📝 AI 赋能企业</h4>
+                            <p>办公全家桶<br>1-2 周快速见效</p>
+                        </div>
+                        <div class="capability-item">
+                            <h4>🎨 AI 创意内容</h4>
+                            <p>营销素材量产<br>替代设计外包</p>
+                        </div>
+                        <div class="capability-item">
+                            <h4>🔌 系统 AI 集成</h4>
+                            <p>ERP/CRM/OA 智能化<br>保护已有 IT 投资</p>
+                        </div>
+                        <div class="capability-item">
+                            <h4>💻 AI 驱动开发</h4>
+                            <p>全链路 AI 辅助<br>开发周期缩短 50-70%</p>
+                        </div>
+                        <div class="capability-item">
+                            <h4>🛠️ AI 智能运维</h4>
+                            <p>赋能运维团队<br>团队提效 3-5 倍</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="foot-band">
+                    <span>AI 解决方案业务蓝图</span>
+                    <span>04 / 12</span>
+                </div>
+            </section>
+
+            <!-- ========================================
+            SLIDE 05 — AI 赋能传统企业
+            ======================================== -->
+            <section class="slide dark">
+                <div class="chrome-band">
+                    <span class="chrome-label">业务线 ①</span>
+                    <span class="chrome-num">04</span>
+                </div>
+                <div class="slide-content">
+                    <h2 class="reveal">AI 赋能传统企业</h2>
+                    <p class="lead reveal" style="margin-bottom: var(--gap-lg);">
+                        办公场景 AI 全家桶，零门槛提效
+                    </p>
+                    <div class="capability-grid reveal">
+                        <div class="capability-item">
+                            <h4>📝 文档生成</h4>
+                            <p>会议纪要、工作汇报、规章制度自动生成</p>
+                        </div>
+                        <div class="capability-item">
+                            <h4>📊 数据分析</h4>
+                            <p>自然语言问答式分析，自动图表与洞察</p>
+                        </div>
+                        <div class="capability-item">
+                            <h4>📽️ 演示文稿</h4>
+                            <p>根据大纲或文档一键生成 PPT</p>
+                        </div>
+                        <div class="capability-item">
+                            <h4>🧠 知识库</h4>
+                            <p>企业知识库搭建与 AI 问答</p>
+                        </div>
+                    </div>
+                    <p class="caption reveal" style="margin-top: var(--gap-md);">
+                        交付形式：工具采购 + 流程适配 + 使用培训 · 客户价值：单点明确、决策门槛低、1-2 周见效
+                    </p>
+                </div>
+                <div class="foot-band">
+                    <span>AI 解决方案业务蓝图</span>
+                    <span>05 / 12</span>
+                </div>
+            </section>
+
+            <!-- ========================================
+            SLIDE 06 — AI 创意内容生成
+            ======================================== -->
+            <section class="slide dark">
+                <div class="chrome-band">
+                    <span class="chrome-label">业务线 ②</span>
+                    <span class="chrome-num">05</span>
+                </div>
+                <div class="slide-content">
+                    <h2 class="reveal">AI 创意内容生成</h2>
+                    <p class="lead reveal" style="margin-bottom: var(--gap-lg);">
+                        营销素材的低成本量产，替代或大幅降低设计外包成本
+                    </p>
+                    <div class="capability-grid reveal">
+                        <div class="capability-item">
+                            <h4>🖼️ 宣传海报</h4>
+                            <p>基于产品/活动信息，AI 生成多风格海报</p>
+                        </div>
+                        <div class="capability-item">
+                            <h4>🎬 宣传视频</h4>
+                            <p>从脚本到成片，AI 辅助视频制作</p>
+                        </div>
+                        <div class="capability-item">
+                            <h4>📱 社媒内容</h4>
+                            <p>小红书/公众号/朋友圈等平台适配内容</p>
+                        </div>
+                    </div>
+                    <p class="caption reveal" style="margin-top: var(--gap-md);">
+                        交付形式：单次项目 / 月度内容套餐 · 客户价值：速度快、成本低、风格多样
+                    </p>
+                </div>
+                <div class="foot-band">
+                    <span>AI 解决方案业务蓝图</span>
+                    <span>06 / 12</span>
+                </div>
+            </section>
+
+            <!-- ========================================
+            SLIDE 07 — 现有系统 AI 集成
+            ======================================== -->
+            <section class="slide dark">
+                <div class="chrome-band">
+                    <span class="chrome-label">业务线 ③</span>
+                    <span class="chrome-num">06</span>
+                </div>
+                <div class="slide-content">
+                    <h2 class="reveal">现有系统 AI 集成</h2>
+                    <p class="lead reveal" style="margin-bottom: var(--gap-lg);">
+                        不推翻存量系统，渐进式智能化改造
+                    </p>
+                    <div class="capability-grid cols-3 reveal">
+                        <div class="capability-item">
+                            <h4>ERP</h4>
+                            <p>智能搜索<br>自然语言查询<br>异常预警</p>
+                        </div>
+                        <div class="capability-item">
+                            <h4>CRM</h4>
+                            <p>客户画像<br>跟进建议<br>流失预测</p>
+                        </div>
+                        <div class="capability-item">
+                            <h4>OA</h4>
+                            <p>智能审批<br>文档摘要<br>会议纪要</p>
+                        </div>
+                        <div class="capability-item">
+                            <h4>客服系统</h4>
+                            <p>AI 客服<br>工单分类<br>自动路由</p>
+                        </div>
+                        <div class="capability-item">
+                            <h4>企业搜索</h4>
+                            <p>跨系统<br>统一语义搜索</p>
+                        </div>
+                    </div>
+                    <p class="caption reveal" style="margin-top: var(--gap-md);">
+                        交付形式：咨询评估 + API / 插件集成 + 定制开发 · 客户价值：保护已有投资、风险可控
+                    </p>
+                </div>
+                <div class="foot-band">
+                    <span>AI 解决方案业务蓝图</span>
+                    <span>07 / 12</span>
+                </div>
+            </section>
+
+            <!-- ========================================
+            SLIDE 08 — AI 驱动开发
+            ======================================== -->
+            <section class="slide dark">
+                <div class="chrome-band">
+                    <span class="chrome-label">业务线 ④</span>
+                    <span class="chrome-num">07</span>
+                </div>
+                <div class="slide-content">
+                    <h2 class="reveal">AI 驱动开发</h2>
+                    <p class="lead reveal" style="margin-bottom: var(--gap-lg);">
+                        从需求到交付，全链路 AI 辅助——开发周期缩短 50-70%
+                    </p>
+                    <div class="flow-row reveal" style="margin-bottom: var(--gap-lg);">
+                        <span class="flow-node">需求分析</span>
+                        <span class="flow-arrow">→</span>
+                        <span class="flow-node">技术选型</span>
+                        <span class="flow-arrow">→</span>
+                        <span class="flow-node">项目规划</span>
+                        <span class="flow-arrow">→</span>
+                        <span class="flow-node">编码实现</span>
+                        <span class="flow-arrow">→</span>
+                        <span class="flow-node">测试交付</span>
+                    </div>
+                    <p class="body-text reveal" style="margin-bottom: var(--gap-sm);">AI 介入每个环节：<br>对话式梳理需求、自动推荐技术栈、智能拆解里程碑与任务、Code Agent 辅助/自动编码、自动生成测试用例</p>
+                    <div class="stat-row reveal">
+                        <div class="stat-cell">
+                            <div class="stat-value">50<em>-70%</em></div>
+                            <div class="stat-label">开发周期缩短</div>
+                        </div>
+                        <div class="stat-cell">
+                            <div class="stat-value">全链路</div>
+                            <div class="stat-label">AI 覆盖</div>
+                        </div>
+                        <div class="stat-cell">
+                            <div class="stat-value">中小型</div>
+                            <div class="stat-label">项目规模</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="foot-band">
+                    <span>AI 解决方案业务蓝图</span>
+                    <span>08 / 12</span>
+                </div>
+            </section>
+
+            <!-- ========================================
+            SLIDE 09 — AI 智能运维
+            ======================================== -->
+            <section class="slide dark">
+                <div class="chrome-band">
+                    <span class="chrome-label">业务线 ⑤</span>
+                    <span class="chrome-num">08</span>
+                </div>
+                <div class="slide-content">
+                    <h2 class="reveal">AI 智能运维</h2>
+                    <p class="lead reveal" style="margin-bottom: var(--gap-lg);">
+                        帮客户的运维团队用上 AI，两条路径可选
+                    </p>
+                    <div class="reveal" style="display: flex; gap: 48px; align-items: stretch; margin-bottom: var(--gap-lg);">
+                        <div class="info-card" style="flex: 1; max-width: none;">
+                            <p class="card-label">路径 A</p>
+                            <h3>🎓 AI 运维培训</h3>
+                            <p>教运维人员用 AI 写脚本、排障、写 SQL、调参<br>适合：团队有基础，缺 AI 使用能力</p>
+                        </div>
+                        <div class="info-card" style="flex: 1; max-width: none;">
+                            <p class="card-label">路径 B</p>
+                            <h3>🏗️ AI 运维体系建设</h3>
+                            <p>搭建内部 AI 运维平台：知识库 + 自动化工作流 + CLI Agent<br>适合：运维场景复杂，需系统化提效</p>
+                        </div>
+                    </div>
+                    <p class="caption reveal">客户价值：现有团队提效 3-5 倍，知识留在组织内部，不依赖外部运维供应商</p>
+                </div>
+                <div class="foot-band">
+                    <span>AI 解决方案业务蓝图</span>
+                    <span>09 / 12</span>
+                </div>
+            </section>
+
+            <!-- ========================================
+            SLIDE 10 — 战略入口：AI 培训
+            ======================================== -->
+            <section class="slide dark">
+                <div class="chrome-band">
+                    <span class="chrome-label">战略入口</span>
+                    <span class="chrome-num">09</span>
+                </div>
+                <div class="slide-content">
+                    <h2 class="reveal">AI 培训 — 最低门槛的获客入口</h2>
+                    <p class="lead reveal" style="margin-bottom: var(--gap-lg);">
+                        哪怕客户暂时没有可落地的项目，也可以从这里开始
+                    </p>
+                    <div class="reveal" style="display: flex; gap: var(--gap-lg); align-items: center; margin-bottom: var(--gap-lg);">
+                        <div class="flow-node accent"> A I 培训<br>🎒</div>
+                        <span class="flow-arrow">→</span>
+                        <div class="flow-node">建立信任<br>发现痛点</div>
+                        <span class="flow-arrow">→</span>
+                        <div class="flow-node">AI 赋能<br>AI 集成</div>
+                        <span class="flow-arrow">→</span>
+                        <div class="flow-node accent">长期合作<br>转介绍</div>
+                    </div>
+                    <ul class="bullet-list bullet-list-lg reveal">
+                        <li>培训是低门槛的初次接触，客户容易说"好"</li>
+                        <li>培训过程中自然暴露真实痛点，发现项目机会</li>
+                        <li>从"学会了"到"帮我们做"的转化路径极短</li>
+                        <li>培训过的客户是种子用户，会带着项目回来</li>
+                    </ul>
+                </div>
+                <div class="foot-band">
+                    <span>AI 解决方案业务蓝图</span>
+                    <span>10 / 12</span>
+                </div>
+            </section>
+
+            <!-- ========================================
+            SLIDE 11 — 合作价值（奶油色变体）
+            ======================================== -->
+            <section class="slide cream">
+                <div class="chrome-band">
+                    <span class="chrome-label">合作价值</span>
+                    <span class="chrome-num">10</span>
+                </div>
+                <div class="slide-content">
+                    <h2 class="reveal">合作创造三方共赢</h2>
+                    <div class="value-columns reveal">
+                        <div class="value-col">
+                            <h3>对集成商（您）</h3>
+                            <ul>
+                                <li>拓宽服务线，不增加人力成本</li>
+                                <li>增加客单价与项目利润率</li>
+                                <li>强化客户粘性与竞争力</li>
+                                <li>抢占 AI 市场先机</li>
+                            </ul>
+                        </div>
+                        <div class="value-col">
+                            <h3>对终端客户</h3>
+                            <ul>
+                                <li>快速落地 AI，无需自建团队</li>
+                                <li>看得见的降本增效成果</li>
+                                <li>保护已有 IT 投资</li>
+                                <li>知识留在组织内部</li>
+                            </ul>
+                        </div>
+                        <div class="value-col">
+                            <h3>长期共赢</h3>
+                            <ul>
+                                <li>培训带动项目转化</li>
+                                <li>项目交付带来持续合作</li>
+                                <li>客户成功驱动转介绍</li>
+                                <li>生态共赢、飞轮增长</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="foot-band">
+                    <span>AI 解决方案业务蓝图</span>
+                    <span>11 / 12</span>
+                </div>
+            </section>
+
+            <!-- ========================================
+            SLIDE 12 — 结束页 (chromeless)
+            ======================================== -->
+            <section class="slide dark chromeless">
+                <div class="slide-content" style="align-items: center; text-align: center;">
+                    <p class="kicker reveal">LET'S BUILD TOGETHER</p>
+                    <h1 class="reveal" style="margin-bottom: var(--gap-lg);">一起，让 AI 落地</h1>
+                    <p class="lead reveal" style="max-width: 800px; margin-bottom: var(--gap-xl);">
+                        成为您客户信赖的 AI 伙伴<br>
+                        一个合作伙伴，全套 AI 能力
+                    </p>
+                    <p class="body-text reveal" style="color: var(--ink-cream-2);">
+                        联系我们，探讨您的第一个 AI 项目
+                    </p>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- Slide Counter -->
+    <div class="slide-counter" id="slideCounter">01 / 12</div>
+
+    <!-- Navigation Dots -->
+    <div class="deck-controls" id="navDots"></div>
+
+    <script>
+        /* ===========================================
+           SLIDE PRESENTATION CONTROLLER
+           =========================================== */
+        class SlidePresentation {
+            constructor() {
+                this.slides = document.querySelectorAll('.slide');
+                this.totalSlides = this.slides.length;
+                this.currentSlide = 0;
+                this.stage = document.getElementById('deckStage');
+                this.counter = document.getElementById('slideCounter');
+                this.navDots = document.getElementById('navDots');
+
+                this.setupStageScale();
+                this.setupNavDots();
+                this.setupKeyboardNav();
+                this.setupTouchNav();
+                this.setupWheelNav();
+                this.showSlide(0);
+            }
+
+            /* --- 舞台缩放 --- */
+            setupStageScale() {
+                const scale = () => {
+                    const factor = Math.min(
+                        window.innerWidth / 1920,
+                        window.innerHeight / 1080
+                    );
+                    const x = (window.innerWidth - 1920 * factor) / 2;
+                    const y = (window.innerHeight - 1080 * factor) / 2;
+                    this.stage.style.transform = `translate(${x}px, ${y}px) scale(${factor})`;
+                };
+                scale();
+                window.addEventListener('resize', scale);
+                window.addEventListener('orientationchange', () => setTimeout(scale, 100));
+            }
+
+            /* --- 导航点 --- */
+            setupNavDots() {
+                for (let i = 0; i < this.totalSlides; i++) {
+                    const dot = document.createElement('div');
+                    dot.className = 'nav-dot';
+                    dot.addEventListener('click', () => this.showSlide(i));
+                    this.navDots.appendChild(dot);
+                }
+            }
+
+            /* --- 键盘 --- */
+            setupKeyboardNav() {
+                document.addEventListener('keydown', (e) => {
+                    // 编辑模式下不拦截
+                    if (e.target.getAttribute('contenteditable') === 'true') return;
+                    switch (e.key) {
+                        case 'ArrowRight': case 'ArrowDown': case ' ':
+                            e.preventDefault(); this.next(); break;
+                        case 'ArrowLeft': case 'ArrowUp':
+                            e.preventDefault(); this.prev(); break;
+                        case 'Home': e.preventDefault(); this.showSlide(0); break;
+                        case 'End': e.preventDefault(); this.showSlide(this.totalSlides - 1); break;
+                    }
+                });
+            }
+
+            /* --- 触摸 --- */
+            setupTouchNav() {
+                let startX = 0, startY = 0;
+                document.addEventListener('touchstart', (e) => {
+                    startX = e.touches[0].clientX;
+                    startY = e.touches[0].clientY;
+                }, { passive: true });
+                document.addEventListener('touchend', (e) => {
+                    const dx = e.changedTouches[0].clientX - startX;
+                    const dy = e.changedTouches[0].clientY - startY;
+                    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 50) {
+                        dx > 0 ? this.prev() : this.next();
+                    }
+                });
+            }
+
+            /* --- 鼠标滚轮（带防抖） --- */
+            setupWheelNav() {
+                let wheelTimeout;
+                document.addEventListener('wheel', (e) => {
+                    if (wheelTimeout) return;
+                    wheelTimeout = setTimeout(() => { wheelTimeout = null; }, 800);
+                    if (e.deltaY > 0) this.next();
+                    else if (e.deltaY < 0) this.prev();
+                }, { passive: true });
+            }
+
+            /* --- 显示幻灯片 --- */
+            showSlide(index) {
+                this.currentSlide = Math.max(0, Math.min(index, this.totalSlides - 1));
+                this.slides.forEach((slide, i) => {
+                    slide.classList.toggle('active', i === this.currentSlide);
+                    slide.classList.toggle('visible', i === this.currentSlide);
+                });
+                // 更新计数器
+                if (this.counter) {
+                    this.counter.textContent =
+                        `${String(this.currentSlide + 1).padStart(2, '0')} / ${String(this.totalSlides).padStart(2, '0')}`;
+                }
+                // 更新导航点
+                const dots = this.navDots.querySelectorAll('.nav-dot');
+                dots.forEach((dot, i) => dot.classList.toggle('active', i === this.currentSlide));
+            }
+
+            next() { if (this.currentSlide < this.totalSlides - 1) this.showSlide(this.currentSlide + 1); }
+            prev() { if (this.currentSlide > 0) this.showSlide(this.currentSlide - 1); }
+        }
+
+        const presentation = new SlidePresentation();
+
+        /* ===========================================
+           INLINE EDITING
+           =========================================== */
+        class InlineEditor {
+            constructor() {
+                this.isActive = false;
+                this.toggleBtn = document.getElementById('editToggle');
+                this.hotzone = document.querySelector('.edit-hotzone');
+                this.editableElements = document.querySelectorAll(
+                    'h1, h2, h3, h4, p, .lead, .body-text, .caption, .kicker, .chrome-label, li, span'
+                );
+                this.setupInteractions();
+            }
+
+            setupInteractions() {
+                // 按钮点击
+                this.toggleBtn.addEventListener('click', () => this.toggleEditMode());
+
+                // 热区悬停（400ms 延迟）
+                let hideTimeout;
+                this.hotzone.addEventListener('mouseenter', () => {
+                    clearTimeout(hideTimeout);
+                    this.toggleBtn.classList.add('show');
+                });
+                this.hotzone.addEventListener('mouseleave', () => {
+                    hideTimeout = setTimeout(() => {
+                        if (!this.isActive) this.toggleBtn.classList.remove('show');
+                    }, 400);
+                });
+                this.toggleBtn.addEventListener('mouseenter', () => clearTimeout(hideTimeout));
+                this.toggleBtn.addEventListener('mouseleave', () => {
+                    hideTimeout = setTimeout(() => {
+                        if (!this.isActive) this.toggleBtn.classList.remove('show');
+                    }, 400);
+                });
+
+                // 热区点击
+                this.hotzone.addEventListener('click', () => this.toggleEditMode());
+
+                // E 键切换
+                document.addEventListener('keydown', (e) => {
+                    if ((e.key === 'e' || e.key === 'E') &&
+                        e.target.getAttribute('contenteditable') !== 'true' &&
+                        !e.ctrlKey && !e.metaKey && !e.altKey) {
+                        this.toggleEditMode();
+                    }
+                });
+
+                // Ctrl+S 保存
+                document.addEventListener('keydown', (e) => {
+                    if ((e.ctrlKey || e.metaKey) && e.key === 's' && this.isActive) {
+                        e.preventDefault();
+                        this.saveToLocalStorage();
+                    }
+                });
+
+                // 加载保存的内容
+                this.loadFromLocalStorage();
+            }
+
+            toggleEditMode() {
+                this.isActive = !this.isActive;
+                this.toggleBtn.classList.toggle('active', this.isActive);
+                this.toggleBtn.textContent = this.isActive ? '💾 保存' : '✏️ 编辑';
+
+                this.editableElements.forEach(el => {
+                    if (this.isActive) {
+                        el.setAttribute('contenteditable', 'true');
+                    } else {
+                        el.removeAttribute('contenteditable');
+                    }
+                });
+
+                if (!this.isActive) this.saveToLocalStorage();
+            }
+
+            saveToLocalStorage() {
+                const data = {};
+                this.editableElements.forEach((el, i) => {
+                    const key = el.className
+                        ? `${el.tagName}.${el.className.replace(/\s+/g, '.')}[${i}]`
+                        : `${el.tagName}[${i}]`;
+                    data[key] = el.innerHTML;
+                });
+                localStorage.setItem('ai-solution-deck-edits', JSON.stringify(data));
+            }
+
+            loadFromLocalStorage() {
+                const saved = localStorage.getItem('ai-solution-deck-edits');
+                if (!saved) return;
+                try {
+                    const data = JSON.parse(saved);
+                    this.editableElements.forEach((el, i) => {
+                        const key = el.className
+                            ? `${el.tagName}.${el.className.replace(/\s+/g, '.')}[${i}]`
+                            : `${el.tagName}[${i}]`;
+                        if (data[key]) el.innerHTML = data[key];
+                    });
+                } catch (e) { /* ignore */ }
+            }
+        }
+
+        new InlineEditor();
+    </script>
+</body>
+</html>
