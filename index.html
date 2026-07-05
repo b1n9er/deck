@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>雏鹰集团 × 飞书 — AI 时代工作台模拟演示</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#060b18;--bg-card:rgba(15,23,42,.75);--primary:#3370FF;--cyan:#06B6D4;--purple:#A78BFA;--accent:linear-gradient(135deg,#3370FF,#06B6D4);--text:#F1F5F9;--text-dim:#64748B;--text-mid:#94A3B8;--border:rgba(51,112,255,.15);--radius:16px;--shadow:0 8px 32px rgba(0,0,0,.45)}
+html{scroll-behavior:smooth}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Helvetica Neue",system-ui,sans-serif;background:var(--bg);color:var(--text);overflow:hidden;height:100vh;width:100vw}
+.bg-grid{position:fixed;inset:0;background-image:linear-gradient(rgba(51,112,255,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(51,112,255,.04) 1px,transparent 1px);background-size:60px 60px;z-index:0;pointer-events:none}
+.bg-orb{position:fixed;border-radius:50%;filter:blur(120px);pointer-events:none;z-index:0}
+.bg-orb.a{width:600px;height:600px;background:rgba(51,112,255,.08);top:-200px;right:-200px}
+.bg-orb.b{width:500px;height:500px;background:rgba(6,182,212,.06);bottom:-150px;left:-150px}
+.bg-orb.c{width:400px;height:400px;background:rgba(167,139,250,.05);top:40%;left:50%;transform:translate(-50%,-50%)}
+.slides{position:relative;z-index:1;height:100vh;width:100vw}
+.slide{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:60px 80px;opacity:0;visibility:hidden;transition:opacity .5s ease,visibility .5s ease;overflow-y:auto}
+.slide.active{opacity:1;visibility:visible}
+.slide-inner{width:100%;max-width:1100px;margin:0 auto}
+.nav{position:fixed;bottom:30px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:12px;z-index:100;background:rgba(15,23,42,.8);backdrop-filter:blur(16px);border:1px solid var(--border);border-radius:40px;padding:10px 20px;box-shadow:var(--shadow)}
+.nav-dots{display:flex;gap:6px}
+.nav-dot{width:8px;height:8px;border-radius:50%;background:rgba(148,163,184,.3);cursor:pointer;transition:all .3s;border:none}
+.nav-dot.active{background:var(--primary);width:24px;border-radius:4px}
+.nav-btn{background:none;border:none;color:var(--text-mid);cursor:pointer;padding:4px 8px;font-size:18px;transition:color .2s;font-family:inherit}
+.nav-btn:hover{color:var(--text)}
+.nav-counter{font-size:13px;color:var(--text-mid);margin:0 4px;white-space:nowrap}
+.cover{text-align:center}
+.cover .badge{display:inline-flex;align-items:center;gap:6px;background:rgba(51,112,255,.12);border:1px solid rgba(51,112,255,.25);border-radius:20px;padding:6px 16px;margin-bottom:32px;font-size:13px;color:var(--primary);letter-spacing:1px}
+.cover h1{font-size:54px;font-weight:700;line-height:1.2;background:linear-gradient(135deg,#F1F5F9 30%,#3370FF 70%,#06B6D4);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:16px}
+.cover .sub{font-size:20px;color:var(--text-mid);margin-bottom:8px;line-height:1.6}
+.cover .meta{font-size:14px;color:var(--text-dim);margin-top:40px;display:flex;gap:24px;justify-content:center;flex-wrap:wrap}
+.cover .meta span{display:flex;align-items:center;gap:6px}
+.slide-header{display:flex;align-items:center;gap:12px;margin-bottom:36px}
+.slide-num{font-size:12px;font-weight:600;color:var(--primary);background:rgba(51,112,255,.12);border:1px solid rgba(51,112,255,.2);border-radius:6px;padding:2px 10px}
+.slide-title{font-size:28px;font-weight:700;background:linear-gradient(135deg,#F1F5F9,#94A3B8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.slide-subtitle{font-size:14px;color:var(--text-dim);margin-left:auto}
+.cards{display:grid;gap:20px}
+.cards-3{grid-template-columns:repeat(3,1fr)}
+.cards-2{grid-template-columns:repeat(2,1fr)}
+.card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:28px;backdrop-filter:blur(8px);transition:transform .3s,border-color .3s,box-shadow .3s}
+.card:hover{transform:translateY(-3px);border-color:rgba(51,112,255,.35);box-shadow:0 4px 24px rgba(51,112,255,.1)}
+.card-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:16px;font-size:20px}
+.card h3{font-size:18px;font-weight:600;margin-bottom:8px}
+.card p{font-size:14px;color:var(--text-mid);line-height:1.7}
+.role-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.role-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:28px;backdrop-filter:blur(8px);text-align:center;transition:transform .3s,border-color .3s}
+.role-card:hover{transform:translateY(-3px);border-color:rgba(51,112,255,.35)}
+.role-card .role-emoji{font-size:36px;margin-bottom:8px}
+.role-card h3{font-size:18px;font-weight:600;margin-bottom:4px}
+.role-card .role-tag{font-size:12px;color:var(--primary);background:rgba(51,112,255,.1);border-radius:4px;padding:2px 10px;display:inline-block;margin-bottom:12px}
+.role-card ul{text-align:left;list-style:none}
+.role-card ul li{font-size:13px;color:var(--text-mid);line-height:1.6;padding:4px 0;padding-left:16px;position:relative}
+.role-card ul li::before{content:"▸";position:absolute;left:0;color:var(--primary)}
+.product-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.product-item{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:20px;transition:all .3s}
+.product-item:hover{transform:translateY(-2px);border-color:rgba(6,182,212,.3)}
+.product-item .p-icon{font-size:24px;margin-bottom:8px}
+.product-item h4{font-size:15px;font-weight:600;margin-bottom:4px}
+.product-item p{font-size:12px;color:var(--text-mid);line-height:1.5}
+.case-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-bottom:24px}
+.case-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:28px;backdrop-filter:blur(8px);transition:all .3s}
+.case-card:hover{transform:translateY(-3px);border-color:rgba(6,182,212,.35)}
+.case-card .case-icon{font-size:32px;margin-bottom:12px;width:56px;height:56px;border-radius:14px;display:flex;align-items:center;justify-content:center;background:rgba(51,112,255,.1)}
+.case-card h3{font-size:17px;font-weight:600;margin-bottom:6px}
+.case-card .case-tag{font-size:11px;color:var(--cyan);background:rgba(6,182,212,.1);border-radius:4px;padding:2px 8px;display:inline-block;margin-bottom:8px}
+.case-card p{font-size:13px;color:var(--text-mid);line-height:1.6}
+.value-metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
+.metric{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:24px;text-align:center;transition:all .3s}
+.metric:hover{border-color:rgba(51,112,255,.3)}
+.metric .num{font-size:32px;font-weight:700;background:var(--accent);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.metric .label{font-size:13px;color:var(--text-mid);margin-top:4px}
+.price-table{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.price-row{display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr;padding:14px 24px;border-bottom:1px solid var(--border);font-size:14px}
+.price-row:last-child{border-bottom:none}
+.price-row.header{background:rgba(51,112,255,.08);font-weight:600;color:var(--primary);font-size:13px}
+.price-row .item{color:var(--text)}
+.price-row .value{color:var(--text-mid);text-align:center}
+.price-row .highlight{color:var(--cyan);font-weight:600}
+.compare-cards{display:grid;grid-template-columns:repeat(2,1fr);gap:20px}
+.compare-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:24px}
+.compare-card h4{font-size:15px;font-weight:600;margin-bottom:10px}
+.compare-card ul{list-style:none}
+.compare-card ul li{font-size:13px;color:var(--text-mid);line-height:1.6;padding:4px 0;padding-left:16px;position:relative}
+.compare-card ul li::before{content:"•";position:absolute;left:0;color:var(--primary)}
+.cta-section{text-align:center;padding:40px 0}
+.cta-section h2{font-size:36px;font-weight:700;background:linear-gradient(135deg,#F1F5F9,#3370FF);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:12px}
+.cta-section p{font-size:16px;color:var(--text-mid);margin-bottom:32px}
+.cta-btn{display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,#3370FF,#2563EB);color:#fff;border:none;padding:14px 36px;border-radius:12px;font-size:16px;font-weight:600;cursor:pointer;transition:all .3s;font-family:inherit}
+.cta-btn:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(51,112,255,.3)}
+.tag-line{display:flex;align-items:center;gap:12px;background:rgba(51,112,255,.08);border:1px solid rgba(51,112,255,.15);border-radius:12px;padding:16px 24px;margin-bottom:32px}
+.tag-line .icon{font-size:20px}
+.tag-line p{font-size:14px;color:var(--text-mid);line-height:1.6;flex:1}
+.tag-line strong{color:var(--primary)}
+.key-msg{background:linear-gradient(135deg,rgba(51,112,255,.1),rgba(6,182,212,.05));border:1px solid rgba(51,112,255,.2);border-radius:var(--radius);padding:24px 32px;margin-top:20px;text-align:center}
+.key-msg p{font-size:15px;color:var(--text-mid);line-height:1.7}
+.key-msg strong{color:var(--text)}
+.fade-up{opacity:0;transform:translateY(20px);transition:all .6s ease}
+.slide.active .fade-up{opacity:1;transform:translateY(0)}
+.slide.active .fade-up:nth-child(2){transition-delay:.1s}
+.slide.active .fade-up:nth-child(3){transition-delay:.2s}
+.slide.active .fade-up:nth-child(4){transition-delay:.3s}
+.slide.active .fade-up:nth-child(5){transition-delay:.4s}
+.key-hint{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);z-index:99;font-size:12px;color:rgba(148,163,184,.4)}
+.slide::-webkit-scrollbar{width:4px}
+.slide::-webkit-scrollbar-track{background:transparent}
+.slide::-webkit-scrollbar-thumb{background:rgba(51,112,255,.3);border-radius:2px}
+@media(max-width:900px){
+  .slide{padding:40px 24px}
+  .cover h1{font-size:36px}
+  .slide-title{font-size:22px}
+  .cards-3,.cards-2,.role-cards,.case-cards{grid-template-columns:1fr}
+  .product-grid{grid-template-columns:repeat(2,1fr)}
+  .value-metrics{grid-template-columns:repeat(2,1fr)}
+  .price-row{grid-template-columns:1fr;gap:4px;padding:12px 16px}
+  .price-row.header{display:none}
+  .compare-cards{grid-template-columns:1fr}
+  .nav{padding:8px 14px;gap:8px;bottom:16px}
+  .nav-dot{width:6px;height:6px}
+  .nav-dot.active{width:18px}
+}
+@media(max-width:600px){
+  .cover h1{font-size:28px}
+  .product-grid,.value-metrics{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<div class="bg-grid"></div>
+<div class="bg-orb a"></div>
+<div class="bg-orb b"></div>
+<div class="bg-orb c"></div>
+<div class="slides" id="slides">
+<div class="slide active" data-index="0">
+  <div class="slide-inner cover">
+    <div class="badge fade-up">胖柴 · 销售模拟演示</div>
+    <h1 class="fade-up">AI 时代的先进工作台</h1>
+    <p class="sub fade-up">雏鹰集团 × 飞书<br>从「制造」到「智造」的组织升级</p>
+    <div class="meta fade-up"><span>🎯 面向经营决策 · 人力 · 信息部门</span><span>🏭 制造业</span><span>📅 2026.07</span></div>
+  </div>
+</div>
+<div class="slide" data-index="1">
+  <div class="slide-inner">
+    <div class="slide-header fade-up"><span class="slide-num">02</span><span class="slide-title">今日交流议程</span></div>
+    <div class="cards cards-2 fade-up">
+      <div class="card"><div class="card-icon" style="background:rgba(51,112,255,.12);color:#3370FF">📊</div><h3>行业洞察</h3><p>制造业数字化三大核心挑战，以及这些挑战如何影响企业的决策</p></div>
+      <div class="card"><div class="card-icon" style="background:rgba(6,182,212,.12);color:#06B6D4">🚀</div><h3>飞书方案</h3><p>飞书产品定位、核心能力矩阵，以及如何在 AI 时代赋能制造业组织升级</p></div>
+      <div class="card"><div class="card-icon" style="background:rgba(167,139,250,.12);color:#A78BFA">🏆</div><h3>行业案例</h3><p>理想汽车、中科创达、安克创新——先进制造企业如何用飞书实现组织升级</p></div>
+      <div class="card"><div class="card-icon" style="background:rgba(251,191,36,.12);color:#FBBF24">💎</div><h3>价值论证</h3><p>总拥有成本(TCO)分析、价格顾虑解读、Pilot 试用方案</p></div>
+    </div>
+    <div class="key-msg fade-up"><p>📌 <strong>核心目标</strong>：种草飞书，打消价格顾虑，建立合作意向</p></div>
+  </div>
+</div>
+<div class="slide" data-index="2">
+  <div class="slide-inner">
+    <div class="slide-header fade-up"><span class="slide-num">03</span><span class="slide-title">制造业数字化三大挑战</span><span class="slide-subtitle">Industry Challenges</span></div>
+    <div class="tag-line fade-up"><span class="icon">🔍</span><p>从「制造」到「智造」的转型路上，<strong>数据孤岛</strong>、<strong>管理半径</strong>、<strong>组织效率</strong>是压在每家企业身上的三座大山</p></div>
+    <div class="cards cards-3 fade-up">
+      <div class="card"><div class="card-icon" style="background:rgba(239,68,68,.12);color:#EF4444">🏗️</div><h3>系统分裂 · 数据孤岛</h3><p>ERP、MES、CRM、OA 各自为政，数据格式不统一、接口不标准。管理层无法获得全局视角，决策依赖经验而非数据。</p></div>
+      <div class="card"><div class="card-icon" style="background:rgba(251,191,36,.12);color:#FBBF24">📡</div><h3>管理半径大 · 信息衰减</h3><p>多基地、多车间、跨城市运营，信息从总部传递到一线层层衰减。会议纪要、排产计划、质量反馈的时效性差。</p></div>
+      <div class="card"><div class="card-icon" style="background:rgba(168,85,247,.12);color:#A855F7">🔄</div><h3>组织僵化 · 协作低效</h3><p>跨部门流程靠线下推动，审批周期长。知识沉淀在个人电脑里，新人上手慢。企业文化在车间和办公楼之间割裂。</p></div>
+    </div>
+  </div>
+</div>
+<div class="slide" data-index="3">
+  <div class="slide-inner">
+    <div class="slide-header fade-up"><span class="slide-num">04</span><span class="slide-title">各角色核心关切</span><span class="slide-subtitle">经营决策 · 人力 · 信息</span></div>
+    <div class="role-cards fade-up">
+      <div class="role-card"><div class="role-emoji">👨‍💼</div><h3>经营决策层</h3><div class="role-tag">数据驱动的战略增长</div><ul><li>如何让经营数据驱动决策</li><li>如何缩短从信息到行动的周期</li><li>如何确保战略自上而下对齐</li><li>投入产出比是否清晰</li></ul></div>
+      <div class="role-card"><div class="role-emoji">👩‍💼</div><h3>组织人力</h3><div class="role-tag">赋能组织与人才</div><ul><li>如何提升跨部门协作效率</li><li>如何建设学习型组织</li><li>如何让企业文化触达一线</li><li>绩效考核与人才发展如何数字化</li></ul></div>
+      <div class="role-card"><div class="role-emoji">👨‍💻</div><h3>信息部门</h3><div class="role-tag">平台打通与安全保障</div><ul><li>如何打通现有系统消除孤岛</li><li>平台是否开放可扩展</li><li>数据安全与合规是否达标</li><li>移动化是否覆盖车间场景</li></ul></div>
+    </div>
+    <div class="key-msg fade-up"><p>💡 飞书以一个平台同时回应三个维度的核心关切——<strong>经营决策看增长</strong>、<strong>组织人力看人效</strong>、<strong>信息部门看底座</strong></p></div>
+  </div>
+</div>
+<div class="slide" data-index="4">
+  <div class="slide-inner">
+    <div class="slide-header fade-up"><span class="slide-num">05</span><span class="slide-title">飞书 — AI 时代的先进工作台</span><span class="slide-subtitle">定位与愿景</span></div>
+    <div class="cards cards-2 fade-up">
+      <div class="card"><div class="card-icon" style="background:rgba(51,112,255,.12);color:#3370FF">🎯</div><h3>一站式协作与办公平台</h3><p>飞书整合即时通讯、文档、日历、视频会议、OKR、知识库、审批等能力，以「一个平台」替代零散的多个工具，实现入口统一、数据联通。</p></div>
+      <div class="card"><div class="card-icon" style="background:rgba(6,182,212,.12);color:#06B6D4">🤖</div><h3>AI 深度嵌入工作流</h3><p>飞书智能伙伴贯穿文档写作、会议纪要、知识问答、数据分析全场景。不是外挂 AI，而是 AI-native 的工作台。</p></div>
+      <div class="card"><div class="card-icon" style="background:rgba(167,139,250,.12);color:#A78BFA">🔗</div><h3>开放平台 · 连接一切</h3><p>开放 API、应用目录、低代码能力、机器人生态。可深度集成 ERP、MES、CRM 等现有系统，保护既有投资。</p></div>
+      <div class="card"><div class="card-icon" style="background:rgba(251,191,36,.12);color:#FBBF24">🌱</div><h3>字节跳动最佳实践</h3><p>源自字节跳动 10 万+ 员工的组织管理实践，经过了超大规模组织的验证。理想汽车、安克创新等制造企业也已全面采用。</p></div>
+    </div>
+  </div>
+</div>
+<div class="slide" data-index="5">
+  <div class="slide-inner">
+    <div class="slide-header fade-up"><span class="slide-num">06</span><span class="slide-title">飞书核心产品能力</span><span class="slide-subtitle">Product Matrix</span></div>
+    <div class="product-grid fade-up">
+      <div class="product-item"><div class="p-icon">💬</div><h4>即时通讯</h4><p>消息、群聊、话题组、已读未读、Pin、机器人</p></div>
+      <div class="product-item"><div class="p-icon">📝</div><h4>飞书文档</h4><p>富文本、表格、流程图，AI 辅助写作与摘要</p></div>
+      <div class="product-item"><div class="p-icon">📅</div><h4>智能日历</h4><p>日程自动同步，会议室管理，时间冲突一目了然</p></div>
+      <div class="product-item"><div class="p-icon">🎥</div><h4>视频会议 + 妙记</h4><p>高清会议、屏幕共享、自动录音转文字、AI 纪要</p></div>
+      <div class="product-item"><div class="p-icon">📚</div><h4>知识库 (Wiki)</h4><p>岗位 SOP、工艺文档统一管理，AI 知识问答</p></div>
+      <div class="product-item"><div class="p-icon">🎯</div><h4>OKR 目标管理</h4><p>目标对齐与追踪，从战略到执行层层穿透</p></div>
+      <div class="product-item"><div class="p-icon">📊</div><h4>多维表格</h4><p>生产看板、排期跟踪、质量数据管理</p></div>
+      <div class="product-item"><div class="p-icon">⚡</div><h4>审批与自动化</h4><p>可定制审批流，低代码场景搭建</p></div>
+      <div class="product-item"><div class="p-icon">🤖</div><h4>AI 智能伙伴</h4><p>问答、写作、总结、翻译、搜索，AI 贯穿所有场景</p></div>
+    </div>
+  </div>
+</div>
+<div class="slide" data-index="6">
+  <div class="slide-inner">
+    <div class="slide-header fade-up"><span class="slide-num">07</span><span class="slide-title">经营决策视角：从数据到决策</span><span class="slide-subtitle">战略价值</span></div>
+    <div class="tag-line fade-up"><span class="icon">🎯</span><p><strong>您是否也面临这些困境？</strong> 数据在 ERP 里、流程在 OA 里、计划在微信里——决策时无从下手</p></div>
+    <div class="cards cards-3 fade-up">
+      <div class="card"><div class="card-icon" style="background:rgba(51,112,255,.12);color:#3370FF">📊</div><h3>经营数据一目了然</h3><p>多维表格连接各业务系统，生产进度、订单交付、质量指标实时可视化。AI 助手自动分析异常，推送预警。</p></div>
+      <div class="card"><div class="card-icon" style="background:rgba(6,182,212,.12);color:#06B6D4">🎯</div><h3>战略层层对齐</h3><p>从 CEO 的 OKR 到部门目标到个人目标，层层对齐、实时追踪。每月复盘一目了然。</p></div>
+      <div class="card"><div class="card-icon" style="background:rgba(167,139,250,.12);color:#A78BFA">⚡</div><h3>信息到行动零延迟</h3><p>飞书打通信息流和审批流。问题在群里提出 → 自动生成任务 → 进度跟踪 → 闭环管理。</p></div>
+    </div>
+  </div>
+</div>
+<div class="slide" data-index="7">
+  <div class="slide-inner">
+    <div class="slide-header fade-up"><span class="slide-num">08</span><span class="slide-title">组织人力视角：人才与文化赋能</span><span class="slide-subtitle">组织价值</span></div>
+    <div class="tag-line fade-up"><span class="icon">👥</span><p><strong>人才是制造业的核心资产。</strong> 如何让知识沉淀、让文化落地、让协作高效</p></div>
+    <div class="cards cards-3 fade-up">
+      <div class="card"><div class="card-icon" style="background:rgba(51,112,255,.12);color:#3370FF">📖</div><h3>知识库 · 学习型组织</h3><p>岗位 SOP、工艺文档、培训材料统一存入知识库。新员工入职自助学习，AI 助手即时回答操作问题。</p></div>
+      <div class="card"><div class="card-icon" style="background:rgba(6,182,212,.12);color:#06B6D4">🤝</div><h3>跨部门高效协作</h3><p>话题群组 + 多维任务管理，跨基地、跨部门的协作不再依赖邮件往返。进度透明、责任明确。</p></div>
+      <div class="card"><div class="card-icon" style="background:rgba(167,139,250,.12);color:#A78BFA">🎉</div><h3>企业文化数字化</h3><p>用飞书直播、社区、点赞、红包等功能，让企业文化触达一线车间。</p></div>
+    </div>
+  </div>
+</div>
+<div class="slide" data-index="8">
+  <div class="slide-inner">
+    <div class="slide-header fade-up"><span class="slide-num">09</span><span class="slide-title">信息化视角：平台打通与数据集成</span><span class="slide-subtitle">技术价值</span></div>
+    <div class="tag-line fade-up"><span class="icon">🔌</span><p><strong>不推倒重来，不重复造轮子。</strong> 飞书以开放平台连接现有系统，让数据流动起来</p></div>
+    <div class="cards cards-3 fade-up">
+      <div class="card"><div class="card-icon" style="background:rgba(51,112,255,.12);color:#3370FF">🔌</div><h3>开放平台 · 集成现有系统</h3><p>开放 API 连接 ERP、MES、CRM、HRIS。消息推送、审批流转、数据同步，让飞书成为统一数字化入口。</p></div>
+      <div class="card"><div class="card-icon" style="background:rgba(6,182,212,.12);color:#06B6D4">🛡️</div><h3>安全合规 · 企业级保障</h3><p>数据加密传输与存储、权限细粒度管控。通过 SOC2、ISO27001 等权威认证。</p></div>
+      <div class="card"><div class="card-icon" style="background:rgba(167,139,250,.12);color:#A78BFA">📱</div><h3>移动覆盖 · 从办公室到车间</h3><p>手机端同步全部功能。车间工人用飞书查看排产计划、提交质检报告、扫码盘点，无需 PC。</p></div>
+    </div>
+  </div>
+</div>
+<div class="slide" data-index="9">
+  <div class="slide-inner">
+    <div class="slide-header fade-up"><span class="slide-num">10</span><span class="slide-title">先进制造 · 标杆实践</span><span class="slide-subtitle">Case Studies</span></div>
+    <div class="tag-line fade-up"><span class="icon">🏆</span><p>从新能源汽车到消费电子到智能系统——<strong>先进制造企业已经用飞书跑得更快</strong></p></div>
+    <div class="case-cards fade-up">
+      <div class="case-card"><div class="case-icon" style="background:rgba(51,112,255,.1)"><span style="font-size:28px">🚗</span></div><div class="case-tag">新能源汽车 · 先进制造</div><h3>理想汽车</h3><p>携手飞书打造新一代智能组织。统一内部沟通协作、文档管理和项目推进，支撑全链路高效运营。</p><p style="margin-top:8px;font-size:12px;color:var(--text-dim);border-top:1px solid var(--border);padding-top:8px">💡 全链路协同 · 项目管理 · 文档体系</p></div>
+      <div class="case-card"><div class="case-icon" style="background:rgba(6,182,212,.1)"><span style="font-size:28px">💻</span></div><div class="case-tag">智能系统 · 先进制造</div><h3>中科创达</h3><p>飞书文档让工程师也爱表达，让技术成为第一护城河。知识沉淀和协作能力极大提升了技术团队的沟通效率和创新能力。</p><p style="margin-top:8px;font-size:12px;color:var(--text-dim);border-top:1px solid var(--border);padding-top:8px">💡 技术文档 · 知识沉淀 · 工程师文化</p></div>
+      <div class="case-card"><div class="case-icon" style="background:rgba(167,139,250,.1)"><span style="font-size:28px">📱</span></div><div class="case-tag">消费电子 · 全球品牌</div><h3>安克创新</h3><p>用飞书聚焦用户体验，加速创造价值。全球化协作能力支撑了多国团队的实时协同与知识共享。</p><p style="margin-top:8px;font-size:12px;color:var(--text-dim);border-top:1px solid var(--border);padding-top:8px">💡 全球化 · 跨时区协作 · 用户体验导向</p></div>
+    </div>
+    <div class="key-msg fade-up"><p>🏭 从「能不能用」到「用得怎么样」——<strong>先进制造的同行已经在用飞书降本增效、加速创新</strong></p></div>
+  </div>
+</div>
+<div class="slide" data-index="10">
+  <div class="slide-inner">
+    <div class="slide-header fade-up"><span class="slide-num">11</span><span class="slide-title">飞书的价值：一个平台，多重收益</span><span class="slide-subtitle">ROI</span></div>
+    <div class="value-metrics fade-up">
+      <div class="metric"><div class="num">70%</div><div class="label">沟通效率提升</div></div>
+      <div class="metric"><div class="num">5x</div><div class="label">协作速度提升</div></div>
+      <div class="metric"><div class="num">3+</div><div class="label">替代工具数量</div></div>
+      <div class="metric"><div class="num">∞</div><div class="label">AI 增长潜力</div></div>
+    </div>
+    <div class="compare-cards fade-up">
+      <div class="compare-card"><h4>❌ 传统工具模式</h4><ul><li>多个系统单独采购，许可证费用叠加</li><li>系统间无打通，数据二次录入成本高</li><li>维护需要多个供应商，协调困难</li><li>员工需在多个应用间切换，效率低下</li><li>缺乏移动化支持，车间场景无法覆盖</li></ul></div>
+      <div class="compare-card"><h4>✅ 飞书平台模式</h4><ul><li>一个平台覆盖沟通+文档+会议+OKR+审批</li><li>数据天然打通，一个入口触达所有信息</li><li>开放平台连接现有系统，保护既有投资</li><li>移动端覆盖全部功能，从办公室到车间</li><li>AI 能力持续进化，不做功能堆砌做效率</li></ul></div>
+    </div>
+  </div>
+</div>
+<div class="slide" data-index="11">
+  <div class="slide-inner">
+    <div class="slide-header fade-up"><span class="slide-num">12</span><span class="slide-title">关于价格：价值 > 价格</span><span class="slide-subtitle">TCO 分析</span></div>
+    <div class="tag-line fade-up"><span class="icon">💰</span><p><strong>贵不贵，不看标价，看总拥有成本（TCO）。</strong> 一个飞书替换多个工具，算总账可能更省</p></div>
+    <div class="price-table fade-up">
+      <div class="price-row header"><span>对比维度</span><span>传统方案</span><span>飞书方案</span><span>飞书优势</span></div>
+      <div class="price-row"><span class="item">许可证成本</span><span class="value">IM+文档+会议+OA=多重费用</span><span class="value highlight">一价全包</span><span class="value highlight">节省 40-60%</span></div>
+      <div class="price-row"><span class="item">系统集成成本</span><span class="value">接口开发费×N个系统</span><span class="value highlight">开放平台一次集成</span><span class="value highlight">降低 70%</span></div>
+      <div class="price-row"><span class="item">培训上手成本</span><span class="value">每个系统单独培训</span><span class="value highlight">一个平台极简上手</span><span class="value highlight">2 周即用</span></div>
+      <div class="price-row"><span class="item">运维成本</span><span class="value">多个供应商多套维护</span><span class="value highlight">统一运维 7×24</span><span class="value highlight">省心省力</span></div>
+      <div class="price-row"><span class="item">AI 能力</span><span class="value">另购 AI 工具额外费用</span><span class="value highlight">AI 智能伙伴内置</span><span class="value highlight">随平台赠送</span></div>
+    </div>
+    <div class="key-msg fade-up"><p>💎 <strong>飞书不是成本，是投资。</strong> 当协作效率提升、决策速度加快、员工生产力释放，ROI 远超价格差异</p></div>
+  </div>
+</div>
+</div>
+<div class="nav" id="nav">
+  <button class="nav-btn" onclick="goSlide(-1)">‹</button>
+  <div class="nav-dots" id="dots"></div>
+  <span class="nav-counter" id="counter"></span>
+  <button class="nav-btn" onclick="goSlide(1)">›</button>
+</div>
+<div class="key-hint">← → 方向键切换 · 点击小点跳转</div>
+<script>
+const S=document.querySelectorAll('.slide'),T=S.length;let c=0;
+const D=document.getElementById('dots');
+for(let i=0;i<T;i++){let d=document.createElement('button');d.className='nav-dot'+(i===0?' active':'');d.onclick=()=>sh(i);D.appendChild(d)}
+up();
+function sh(i){S[c].classList.remove('active');S[i].classList.add('active');c=i;document.querySelectorAll('.nav-dot').forEach((d,j)=>{d.classList.toggle('active',j===c)});up()}
+function up(){document.getElementById('counter').textContent=String(c+1).padStart(2,'0')+'/'+String(T).padStart(2,'0')}
+function go(d){let n=c+d;if(n<0)n=T-1;if(n>=T)n=0;sh(n)}
+document.addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight'||e.key==='ArrowDown'||e.key===' '){e.preventDefault();go(1)}
+  if(e.key==='ArrowLeft'||e.key==='ArrowUp'){e.preventDefault();go(-1)}
+  if(e.key==='Home'){e.preventDefault();sh(0)}
+  if(e.key==='End'){e.preventDefault();sh(T-1)}
+});
+let ts=0;document.addEventListener('touchstart',e=>{ts=e.changedTouches[0].screenX},{passive:true});
+document.addEventListener('touchend',e=>{let te=e.changedTouches[0].screenX;if(Math.abs(ts-te)>60){(ts-te)>0?go(1):go(-1)}},{passive:true});
+</script>
+</body>
+</html>
